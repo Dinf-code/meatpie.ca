@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import '../App.css';
 import { db } from '../services/firebase';
-import { doc, onSnapshot, setDoc, updateDoc, increment, collection, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, updateDoc, increment, collection, addDoc } from 'firebase/firestore';
 import FlipClock from "../components/FlipClock";
 import InfoSection from "../components/InfoSection";
 import { createCheckoutSession } from "../services/api";
+
 
 
 const WEEKLY_MAX_PAID = 90;
@@ -19,33 +20,74 @@ function App() {
   const [remainingPies, setRemainingPies] = useState(WEEKLY_MAX_PAID);
   const [showSummary, setShowSummary] = useState(false);
 
+// Update timer
+useEffect(() => {
+  const updateTimer = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sunday
+
+    const isOpen = day >= 1 && day <= 4;
+    setIsOpen(isOpen);
+
+    let target = new Date(now);
+
+    if (isOpen) {
+      // If today is Thursday → close today
+      if (day === 4) {
+        target.setHours(23, 59, 59, 999);
+      } else {
+        // Otherwise → next Thursday
+        const daysUntilThursday = 4 - day;
+        target.setDate(now.getDate() + daysUntilThursday);
+        target.setHours(23, 59, 59, 999);
+      }
+    } else {
+      // Next Monday
+      const daysUntilMonday = (1 - day + 7) % 7;
+      target.setDate(now.getDate() + daysUntilMonday);
+      target.setHours(0, 0, 0, 0);
+    }
+
+    const diff = target - now;
+
+    const hrs = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff / (1000 * 60)) % 60);
+    const secs = Math.floor((diff / 1000) % 60);
+
+    setTimeRemaining(`${hrs}:${mins}:${secs}`);
+  };
+
+  updateTimer();
+  const interval = setInterval(updateTimer, 1000);
+
+  return () => clearInterval(interval);
+}, []);
 
 // Real-time sync with Firebase
 useEffect(() => {
   const capacityRef = doc(db, 'config', 'capacity');
 
-  const initAndListen = async () => {
-    // Initialize ONLY if it doesn't exist
-    await setDoc(
-      capacityRef,
-      { remainingPies: WEEKLY_MAX_PAID },
-      { merge: true }
-    );
+  let unsubscribe;
 
-    const unsubscribe = onSnapshot(capacityRef, (docSnap) => {
+  const initAndListen = async () => {
+    const docSnap = await getDoc(capacityRef);
+
+    // ✅ Only initialize if it doesn't exist
+    if (!docSnap.exists()) {
+      await setDoc(capacityRef, {
+        remainingPies: WEEKLY_MAX_PAID
+      });
+    }
+
+    // ✅ Listen for real-time updates
+    unsubscribe = onSnapshot(capacityRef, (docSnap) => {
       if (docSnap.exists()) {
         setRemainingPies(docSnap.data().remainingPies);
       }
     });
-
-    return unsubscribe;
   };
 
-  let unsubscribe;
-
-  initAndListen().then((unsub) => {
-    unsubscribe = unsub;
-  });
+  initAndListen();
 
   return () => {
     if (unsubscribe) unsubscribe();
