@@ -94,6 +94,19 @@ useEffect(() => {
   };
 }, []);
 
+// Detect successful payment
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("success")) {
+    alert("Payment successful! 🎉");
+  }
+
+  if (params.get("canceled")) {
+    alert("Payment canceled.");
+  }
+}, []);
+
 const [orderForm, setOrderForm] = useState({
   name: '',
   email: '',

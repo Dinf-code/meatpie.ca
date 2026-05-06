@@ -49,8 +49,8 @@ export default async function handler(req, res) {
         quantity: quantity.toString(),
       },
 
-      success_url: `https://meatpieca.vercel.app/success?orderId=${orderId}`,
-      cancel_url: `https://meatpieca.vercel.app/cancel`,
+      success_url: `https://meatpie.ca/?success=true&orderId=${orderId}`,
+      cancel_url: `https://meatpie.ca/?canceled=true`,
     });
 
     res.status(200).json({ url: session.url });
