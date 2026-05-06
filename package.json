@@ -12,6 +12,7 @@
   "dependencies": {
     "@stripe/stripe-js": "^8.11.0",
     "firebase": "^12.9.0",
+    "firebase-admin": "^13.8.0",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

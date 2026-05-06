@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { db } from "./firebaseAdmin.js";
 
 export const config = {
   api: {
@@ -41,12 +42,29 @@ export default async function handler(req, res) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
-    console.log("✅ Payment successful:", {
-      sessionId: session.id,
-      orderId: session.metadata?.orderId,
-    });
+const orderId = session.metadata?.orderId;
+const quantity = Number(session.metadata?.quantity || 0);
 
-    // 👉 THIS is where you update Firebase
+if (orderId) {
+  await db.collection("orders").doc(orderId).update({
+    paymentStatus: "paid",
+    stripeSessionId: session.id,
+  });
+
+  const capacityRef = db.collection("config").doc("capacity");
+
+  await db.runTransaction(async (transaction) => {
+    const capacityDoc = await transaction.get(capacityRef);
+
+    const current = capacityDoc.data().remainingPies || 0;
+
+    transaction.update(capacityRef, {
+      remainingPies: current - quantity,
+    });
+  });
+
+  console.log("✅ Firebase updated successfully");
+}
   }
 
   res.status(200).json({ received: true });
