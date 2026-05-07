@@ -46,11 +46,35 @@ const orderId = session.metadata?.orderId;
 const quantity = Number(session.metadata?.quantity || 0);
 
 if (orderId) {
-  await db.collection("orders").doc(orderId).update({
+  const orderRef = db.collection("orders").doc(orderId);
+
+  const orderDoc = await orderRef.get();
+
+  if (!orderDoc.exists) {
+    console.error("❌ Order not found");
+    return res.status(404).send("Order not found");
+  }
+
+  const existingOrder = orderDoc.data();
+
+  // ✅ Prevent duplicate webhook processing
+  if (existingOrder.paymentStatus === "paid") {
+    console.log("⚠️ Order already processed");
+
+    return res.status(200).json({
+      received: true,
+      duplicate: true,
+    });
+  }
+
+  // ✅ Update order status
+  await orderRef.update({
     paymentStatus: "paid",
     stripeSessionId: session.id,
+    processedAt: new Date(),
   });
 
+  // ✅ Reduce inventory safely
   const capacityRef = db.collection("config").doc("capacity");
 
   await db.runTransaction(async (transaction) => {
