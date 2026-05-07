@@ -19,6 +19,7 @@ function App() {
   const [timeRemaining, setTimeRemaining] = useState('');
   const [remainingPies, setRemainingPies] = useState(WEEKLY_MAX_PAID);
   const [showSummary, setShowSummary] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
 // Update timer
 useEffect(() => {
@@ -122,8 +123,12 @@ const [formErrors, setFormErrors] = useState({});
   const hst = subtotal * 0.13;
   const totalWithHST = subtotal + hst;
   const freePies = Math.floor(quantity / 9);
-  const totalPiesWithBonus = quantity + freePies;
-  const willExceedCapacity = remainingPies !== null && quantity > remainingPies;
+const totalPiesWithBonus = quantity + freePies;
+
+const isSoldOut = remainingPies <= 0;
+
+const willExceedCapacity =
+  remainingPies !== null && quantity > remainingPies;
   
   const handleCheckout = () => {
   if (!isOpen || willExceedCapacity || remainingPies <= 0) return;
@@ -131,6 +136,10 @@ const [formErrors, setFormErrors] = useState({});
 };
   
   const handleContinueToPayment = async () => {
+  if (isLoading) return;
+
+  setIsLoading(true);
+  
   // Validate form
   const errors = {};
   
@@ -194,11 +203,15 @@ setFormErrors({});
 });
     
     // Redirect to Stripe Checkout
+    if (!data?.url) {
+  throw new Error("Stripe session URL missing");
+}
     window.location.href = data.url;
     
   } catch (error) {
     console.error('❌ Error:', error);
     alert('Error submitting order. Please try again.');
+    setIsLoading(false);
   }
 };
   return (
@@ -253,8 +266,24 @@ setFormErrors({});
             <button onClick={() => setQuantity(Math.max(3, quantity - 3))} disabled={quantity <= 3}
               style={{ width: 'clamp(44px,12vw,56px)', height: 'clamp(44px,12vw,56px)', borderRadius: '50%', background: quantity <= 3 ? 'rgba(197,148,159,0.3)' : 'linear-gradient(135deg,#C5949F,#B88B95)', border: 'none', fontSize: 'clamp(20px,6vw,28px)', fontWeight: '700', color: '#0A1628', cursor: quantity <= 3 ? 'not-allowed' : 'pointer', opacity: quantity <= 3 ? 0.5 : 1 }}>−</button>
             <div style={{ fontSize: 'clamp(36px,10vw,48px)', fontWeight: '700', background: 'linear-gradient(135deg,#F5E6E8,#C5949F)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{quantity}</div>
-            <button onClick={() => setQuantity(quantity + 3)}
-              style={{ width: 'clamp(44px,12vw,56px)', height: 'clamp(44px,12vw,56px)', borderRadius: '50%', background: 'linear-gradient(135deg,#C5949F,#B88B95)', border: 'none', fontSize: 'clamp(20px,6vw,28px)', fontWeight: '700', color: '#0A1628', cursor: 'pointer' }}>+</button>
+            <button
+  onClick={() => setQuantity(quantity + 3)}
+  disabled={isSoldOut}
+  style={{
+    width: 'clamp(44px,12vw,56px)',
+    height: 'clamp(44px,12vw,56px)',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg,#C5949F,#B88B95)',
+    border: 'none',
+    fontSize: 'clamp(20px,6vw,28px)',
+    fontWeight: '700',
+    color: '#0A1628',
+    cursor: isSoldOut ? 'not-allowed' : 'pointer',
+    opacity: isSoldOut ? 0.5 : 1
+  }}
+>
+  +
+</button>
           </div>
         </div>
 
@@ -271,9 +300,13 @@ setFormErrors({});
           fontWeight: '600',
           letterSpacing: '0.5px'
         }}>
-          {willExceedCapacity
-            ? `Only ${remainingPies} meat pies left in stock!`
-            : `${remainingPies} meat pies left in stock!`}
+          {
+  isSoldOut
+    ? 'SOLD OUT'
+    : willExceedCapacity
+    ? `Only ${remainingPies} meat pies left in stock!`
+    : `${remainingPies} meat pies left in stock!`
+}
         </div>
 
         {/* Price Breakdown */}
@@ -402,20 +435,95 @@ setFormErrors({});
 
       {/* ── CHECKOUT BUTTON ── */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: 'clamp(12px,3vw,20px)', background: 'linear-gradient(to top,#0A1628 80%,transparent)', display: 'flex', justifyContent: 'center' }}>
-        <button disabled={!isOpen||willExceedCapacity} onClick={handleCheckout}
-          style={{ width: '100%', maxWidth: '100%', padding: 'clamp(14px,3vw,20px)', background: !isOpen||willExceedCapacity?'rgba(107,114,128,0.3)':'linear-gradient(135deg,#C5949F,#B88B95)', border: 'none', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: !isOpen||willExceedCapacity?'not-allowed':'pointer', boxShadow: !isOpen||willExceedCapacity?'none':'0 8px 32px rgba(197,148,159,0.5)', color: !isOpen||willExceedCapacity?'#6B7280':'#0A1628', opacity: !isOpen||willExceedCapacity?0.6:1 }}>
-          <div style={{ textAlign: 'left' }}>
-            <div style= {{ fontSize: 'clamp(10px,2.5vw,12px)', fontWeight: '600', marginBottom: '4px' }}>
-              {willExceedCapacity?'CAPACITY REACHED':isOpen?'PROCEED TO PAY':'ORDERS CLOSED'}
-            </div>
-            <div style={{ fontSize: 'clamp(18px,5vw,24px)', fontWeight: '700' }}>
-              ${deliveryMethod==='delivery'?`${totalWithHST.toFixed(2)}+`:totalWithHST.toFixed(2)}
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'clamp(13px,3.5vw,18px)', fontWeight: '700' }}>
-            {willExceedCapacity?'Adjust':isOpen?'CHECKOUT':'Opening Soon'} <span>→</span>
-          </div>
-        </button>
+        <button
+  disabled={!isOpen || willExceedCapacity || isSoldOut}
+  onClick={handleCheckout}
+  style={{
+    width: '100%',
+    maxWidth: '100%',
+    padding: 'clamp(14px,3vw,20px)',
+    background:
+      !isOpen || willExceedCapacity || isSoldOut
+        ? 'rgba(107,114,128,0.3)'
+        : 'linear-gradient(135deg,#C5949F,#B88B95)',
+    border: 'none',
+    borderRadius: '16px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    cursor:
+      !isOpen || willExceedCapacity || isSoldOut
+        ? 'not-allowed'
+        : 'pointer',
+    boxShadow:
+      !isOpen || willExceedCapacity || isSoldOut
+        ? 'none'
+        : '0 8px 32px rgba(197,148,159,0.5)',
+    color:
+      !isOpen || willExceedCapacity || isSoldOut
+        ? '#6B7280'
+        : '#0A1628',
+    opacity:
+      !isOpen || willExceedCapacity || isSoldOut
+        ? 0.6
+        : 1
+  }}
+>
+  <div style={{ textAlign: 'left' }}>
+    <div
+      style={{
+        fontSize: 'clamp(10px,2.5vw,12px)',
+        fontWeight: '600',
+        marginBottom: '4px'
+      }}
+    >
+      {
+        isSoldOut
+          ? 'SOLD OUT'
+          : willExceedCapacity
+          ? 'CAPACITY REACHED'
+          : isOpen
+          ? 'PROCEED TO PAY'
+          : 'ORDERS CLOSED'
+      }
+    </div>
+
+    <div
+      style={{
+        fontSize: 'clamp(18px,5vw,24px)',
+        fontWeight: '700'
+      }}
+    >
+      ${
+        deliveryMethod === 'delivery'
+          ? `${totalWithHST.toFixed(2)}+`
+          : totalWithHST.toFixed(2)
+      }
+    </div>
+  </div>
+
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      fontSize: 'clamp(13px,3.5vw,18px)',
+      fontWeight: '700'
+    }}
+  >
+    {
+      isSoldOut
+        ? 'Unavailable'
+        : willExceedCapacity
+        ? 'Adjust'
+        : isOpen
+        ? 'CHECKOUT'
+        : 'Opening Soon'
+    }
+
+    <span>→</span>
+  </div>
+</button>
       </div>
 
       {/* ── ORDER FORM MODAL ── */}
@@ -519,8 +627,11 @@ setFormErrors({});
         <button onClick={()=>setShowSummary(false)} style={{ flex: '1', minWidth: '120px', padding: '14px 24px', borderRadius: '12px', border: '2px solid rgba(197,148,159,0.5)', backgroundColor: 'transparent', color: '#F5E6E8', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
           Back
         </button>
-        <button onClick={handleContinueToPayment} style={{ flex: '2', minWidth: '160px', padding: '14px 32px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg,#C5949F,#B88B95)', color: '#0A1628', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }}>
-          Continue to Payment →
+        <button onClick={handleContinueToPayment}
+          disabled={isLoading}
+          style={{ flex: '2', minWidth: '160px', padding: '14px 32px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg,#C5949F,#B88B95)', color: '#0A1628', cursor: 'pointer', fontSize: '14px', fontWeight: '700', opacity: isLoading ? 0.7 : 1,
+cursor: isLoading ? 'not-allowed' : 'pointer'}}>
+          {isLoading ? 'Redirecting...' : 'Continue to Payment →'}
         </button>
       </div>
     </div>

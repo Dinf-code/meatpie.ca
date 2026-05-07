@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { db } from "./firebaseAdmin.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -16,13 +17,46 @@ export default async function handler(req, res) {
     const {
       orderId,
       quantity,
-      total,
       customer
     } = body;
 
-    if (!orderId || !quantity || !total) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!orderId || !quantity) {
+      return res.status(400).json({
+        error: 'Missing required fields'
+      });
     }
+
+    // ✅ Fetch live inventory from Firestore
+    const capacityRef = db.collection("config").doc("capacity");
+
+    const capacityDoc = await capacityRef.get();
+
+    if (!capacityDoc.exists) {
+      return res.status(500).json({
+        error: "Capacity configuration missing",
+      });
+    }
+
+    const remainingPies = capacityDoc.data().remainingPies || 0;
+
+    // ✅ Prevent invalid quantities
+    if (quantity <= 0) {
+      return res.status(400).json({
+        error: "Invalid quantity",
+      });
+    }
+
+    // ✅ Prevent overselling
+    if (quantity > remainingPies) {
+      return res.status(400).json({
+        error: "Not enough pies remaining",
+      });
+    }
+
+    // ✅ Backend-controlled pricing
+    const PRICE_PER_PIE = 1500; // $15 CAD in cents
+
+    const calculatedTotal = quantity * PRICE_PER_PIE;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -38,7 +72,7 @@ export default async function handler(req, res) {
               name: 'Meat Pies Pack',
               description: `${quantity} pies ordered`,
             },
-            unit_amount: Math.round(Number(total) * 100),
+            unit_amount: calculatedTotal,
           },
           quantity: 1,
         },
@@ -53,10 +87,15 @@ export default async function handler(req, res) {
       cancel_url: `https://meatpie.ca/?canceled=true`,
     });
 
-    res.status(200).json({ url: session.url });
+    res.status(200).json({
+      url: session.url
+    });
 
   } catch (error) {
     console.error('Stripe error:', error);
-    res.status(500).json({ error: error.message });
+
+    res.status(500).json({
+      error: error.message
+    });
   }
 }
