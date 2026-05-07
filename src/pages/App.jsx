@@ -150,12 +150,14 @@ const willExceedCapacity =
   if (deliveryMethod === 'delivery' && !orderForm.address.trim()) errors.address = 'Delivery address is required';
   
   if (Object.keys(errors).length > 0) {
-    setFormErrors(errors);
-    return;
-  }
+  setFormErrors(errors);
+  setIsLoading(false);
+  return;
+}
 
   if (quantity > remainingPies) {
   alert('Not enough stock available');
+  setIsLoading(false);
   return;
 }
   
@@ -268,7 +270,7 @@ setFormErrors({});
             <div style={{ fontSize: 'clamp(36px,10vw,48px)', fontWeight: '700', background: 'linear-gradient(135deg,#F5E6E8,#C5949F)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{quantity}</div>
             <button
   onClick={() => setQuantity(quantity + 3)}
-  disabled={isSoldOut}
+  disabled={isSoldOut || quantity + 3 > remainingPies}
   style={{
     width: 'clamp(44px,12vw,56px)',
     height: 'clamp(44px,12vw,56px)',
@@ -278,8 +280,8 @@ setFormErrors({});
     fontSize: 'clamp(20px,6vw,28px)',
     fontWeight: '700',
     color: '#0A1628',
-    cursor: isSoldOut ? 'not-allowed' : 'pointer',
-    opacity: isSoldOut ? 0.5 : 1
+    cursor:isSoldOut || quantity + 3 > remainingPies ? 'not-allowed': 'pointer', 
+    opacity: isSoldOut || quantity + 3 > remainingPies ? 0.5: 1
   }}
 >
   +
