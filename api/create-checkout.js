@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     const {
       orderId,
       quantity,
-      customer
+      customer,
+      email        
     } = body;
 
     if (!orderId || !quantity) {
@@ -54,15 +55,16 @@ export default async function handler(req, res) {
     }
 
     // ✅ Backend-controlled pricing
-    const PRICE_PER_PIE = 1500; // $15 CAD in cents
-
-    const calculatedTotal = quantity * PRICE_PER_PIE;
+    const packs = quantity / 3;
+    const subtotal = packs * 1000;        // $10 per pack in cents
+    const hst = Math.round(subtotal * 0.13);
+    const calculatedTotal = subtotal + hst;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
 
-      customer_email: customer?.email || undefined,
+      customer_email: email || undefined,
 
       line_items: [
         {
