@@ -89,7 +89,7 @@ function SuccessPage() {
         <div style={{ background: 'rgba(197,148,159,0.08)', border: '1px solid rgba(197,148,159,0.25)', borderRadius: '14px', padding: '18px', marginBottom: '14px' }}>
           <div style={{ fontSize: '12px', color: '#C5949F', fontWeight: '700', letterSpacing: '1px', marginBottom: '10px' }}>WHAT HAPPENS NEXT</div>
           {[
-            ['Ready', 'Saturday, 5pm – 10pm'],
+           ['Ready', 'Saturday, 5pm – 10pm EST'],
             ['Pickup', 'Niagara, ON'],
           ].map(([label, value]) => (
             <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(197,148,159,0.15)', fontSize: '14px' }}>

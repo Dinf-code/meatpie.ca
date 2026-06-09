@@ -54,6 +54,13 @@ export default async function handler(req, res) {
       });
     }
 
+    // ✅ Verify order exists in Firebase
+     const orderRef = db.collection("orders").doc(orderId);
+     const orderDoc = await orderRef.get();
+     if (!orderDoc.exists) {
+     return res.status(404).json({ error: "Order not found" });
+}
+
     // ✅ Backend-controlled pricing
     const packs = quantity / 3;
     const subtotal = packs * 1000;        // $10 per pack in cents
@@ -85,8 +92,8 @@ export default async function handler(req, res) {
         quantity: quantity.toString(),
       },
 
-      success_url: `https://meatpie.ca/?success=true&orderId=${orderId}`,
-      cancel_url: `https://meatpie.ca/?canceled=true`,
+     success_url: `https://meatpie.ca/success?orderId=${orderId}`,
+     cancel_url: `https://meatpie.ca/cancel`,
     });
 
     res.status(200).json({

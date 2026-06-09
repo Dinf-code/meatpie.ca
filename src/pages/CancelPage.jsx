@@ -38,7 +38,7 @@ function CancelPage() {
             </div>
           ))}
           <div style={{ fontSize: '12px', color: '#C5949F', marginTop: '10px' }}>
-            Orders open Monday to Thursday. Ready every Saturday 5pm – 10pm.
+            Orders open Monday to Thursday (EST). Ready every Saturday 5pm – 10pm EST.
           </div>
         </div>
 
