@@ -58,7 +58,7 @@ if (orderId) {
   const existingOrder = orderDoc.data();
 
   // ✅ Prevent duplicate webhook processing
-  if (existingOrder.paymentStatus === "paid") {
+  if (existingOrder.status === "paid") {
     console.log("⚠️ Order already processed");
 
     return res.status(200).json({
@@ -68,11 +68,11 @@ if (orderId) {
   }
 
   // ✅ Update order status
-  await orderRef.update({
-    paymentStatus: "paid",
+    await orderRef.update({
+    status: "paid",           // single source of truth
     stripeSessionId: session.id,
     processedAt: new Date(),
-  });
+   });
 
   // ✅ Reduce inventory safely
   const capacityRef = db.collection("config").doc("capacity");

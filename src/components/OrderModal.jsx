@@ -113,15 +113,25 @@ function OrderModal({
 
       {/* Buttons */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-        <button onClick={()=>setShowSummary(false)} style={{ flex: '1', minWidth: '120px', padding: '14px 24px', borderRadius: '12px', border: '2px solid rgba(197,148,159,0.5)', backgroundColor: 'transparent', color: '#F5E6E8', fontSize: '14px', fontWeight: '600' }}>
-          Back
-        </button>
-        <button onClick={handleContinueToPayment}
-          disabled={isLoading}
-          style={{ flex: '2', minWidth: '160px', padding: '14px 32px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg,#C5949F,#B88B95)', color: '#0A1628', cursor: 'pointer', fontSize: '14px', fontWeight: '700', opacity: isLoading ? 0.7 : 1,
-cursor: isLoading ? 'not-allowed' : 'pointer'}}>
-          {isLoading ? 'Redirecting...' : 'Continue to Payment →'}
-        </button>
+        <button
+  onClick={handleContinueToPayment}
+  disabled={isLoading}
+  style={{
+    flex: '2',
+    minWidth: '160px',
+    padding: '14px 32px',
+    borderRadius: '12px',
+    border: 'none',
+    background: 'linear-gradient(135deg,#C5949F,#B88B95)',
+    color: '#0A1628',
+    fontSize: '14px',
+    fontWeight: '700',
+    opacity: isLoading ? 0.7 : 1,
+    cursor: isLoading ? 'not-allowed' : 'pointer',
+  }}
+>
+  {isLoading ? 'Redirecting...' : 'Continue to Payment →'}
+</button>
       </div>
     </div>
   </div>

@@ -98,8 +98,7 @@ setFormErrors({});
       
       // Metadata
       status: 'pending_payment',
-      createdAt: new Date().toISOString(),
-      paid: false
+      createdAt: new Date().toISOString()
     };
     
     // Save to Firebase orders collection
