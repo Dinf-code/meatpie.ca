@@ -70,7 +70,7 @@ const willExceedCapacity =
 }
 
   if (quantity > remainingPies) {
-  alert('Not enough stock available');
+  showToast('error', 'Not enough stock available');
   setIsLoading(false);
   return;
 }
@@ -118,17 +118,28 @@ console.log("✅ Order saved to Firebase with ID:", docRef.id);
 });
     
     // Redirect to Stripe Checkout
-    if (!data?.url) {
+   if (!data?.url) {
   throw new Error("Stripe session URL missing");
 }
-    window.location.href = data.url;
+showToast('success', 'Order confirmed!');
+setTimeout(() => {
+  window.location.href = data.url;
+}, 2000); // show toast for 2 seconds before redirecting
     
   } catch (error) {
-    console.error('❌ Error:', error);
-    alert('Error submitting order. Please try again.');
-    setIsLoading(false);
-  }
+  console.error('❌ Error:', error);
+  showToast('error', 'Error submitting order. Please try again.');
+  setIsLoading(false);
+ }
 };
+
+const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
+
+const showToast = (type, message) => {
+  setToast({ type, message });
+  if (type === 'error') setTimeout(() => setToast(null), 3500);
+};
+
   return (
     <div style={{ minHeight: '100vh', width: '100%', backgroundColor: '#0F1B2D', color: '#F5E6E8', position: 'relative', paddingBottom: '100px', overflowX: 'hidden', boxSizing: 'border-box' }}>
 
@@ -440,6 +451,96 @@ console.log("✅ Order saved to Firebase with ID:", docRef.id);
   </div>
 </button>
       </div>
+
+      {/* ── ERROR TOAST — top ── */}
+{toast?.type === 'error' && (
+  <div style={{
+    position: 'fixed', top: '16px', left: '16px', right: '16px',
+    zIndex: 100, display: 'flex', justifyContent: 'center',
+  }}>
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '10px',
+      padding: '12px 16px', borderRadius: '12px',
+      backgroundColor: 'rgba(239,68,68,0.15)',
+      border: '1px solid rgba(239,68,68,0.5)',
+      color: '#FCA5A5', fontSize: '14px', fontWeight: '500',
+      maxWidth: '400px', width: '100%',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+    }}>
+      <div style={{
+        width: '22px', height: '22px', borderRadius: '50%',
+        background: 'rgba(239,68,68,0.3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '12px', flexShrink: 0,
+      }}>✕</div>
+      {toast.message}
+    </div>
+  </div>
+)}
+
+{/* ── SUCCESS TOAST — center ── */}
+{toast?.type === 'success' && (
+  <div style={{
+    position: 'fixed', inset: 0, zIndex: 100,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    overflow: 'hidden',
+  }}>
+    {/* Confetti */}
+    {[
+      { left: '10%', color: '#C5949F', w: 8, h: 8, delay: 0, dur: 2.1 },
+      { left: '20%', color: '#22C55E', w: 6, h: 10, delay: 0.3, dur: 1.8 },
+      { left: '35%', color: '#F4D4DA', w: 8, h: 8, delay: 0.1, dur: 2.4 },
+      { left: '50%', color: '#C5949F', w: 10, h: 6, delay: 0.5, dur: 1.9 },
+      { left: '65%', color: '#1D9E75', w: 8, h: 8, delay: 0.2, dur: 2.2 },
+      { left: '75%', color: '#F4D4DA', w: 6, h: 6, delay: 0.4, dur: 2.0 },
+      { left: '85%', color: '#C5949F', w: 8, h: 8, delay: 0.6, dur: 1.7 },
+      { left: '5%',  color: '#1D9E75', w: 6, h: 10, delay: 0.7, dur: 2.3 },
+      { left: '55%', color: '#F4D4DA', w: 8, h: 8, delay: 0.9, dur: 2.0 },
+      { left: '30%', color: '#22C55E', w: 6, h: 6, delay: 0.8, dur: 1.6 },
+      { left: '70%', color: '#C5949F', w: 10, h: 6, delay: 1.1, dur: 2.2 },
+      { left: '90%', color: '#1D9E75', w: 8, h: 8, delay: 0.15, dur: 1.9 },
+    ].map((c, i) => (
+      <div key={i} style={{
+        position: 'absolute', top: '-20px',
+        left: c.left, width: c.w, height: c.h,
+        backgroundColor: c.color, borderRadius: '2px',
+        animation: `confettiFall ${c.dur}s ${c.delay}s ease-in infinite`,
+      }} />
+    ))}
+
+    {/* Card */}
+    <div style={{
+      backgroundColor: '#0F1B2D',
+      border: '2px solid #1D9E75',
+      borderRadius: '20px',
+      padding: '32px 28px',
+      textAlign: 'center',
+      width: '280px',
+      position: 'relative', zIndex: 2,
+      boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+    }}>
+      <div style={{
+        width: '60px', height: '60px', borderRadius: '50%',
+        background: 'rgba(29,158,117,0.15)',
+        border: '2px solid #1D9E75',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        margin: '0 auto 16px',
+      }}>
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path d="M5 14l7 7L23 7" stroke="#1D9E75" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+            style={{ strokeDasharray: 50, strokeDashoffset: 0, animation: 'drawCheck 0.5s ease forwards' }} />
+        </svg>
+      </div>
+      <div style={{ fontSize: '20px', fontWeight: '700', color: '#F5E6E8', marginBottom: '8px' }}>
+        Order Confirmed!
+      </div>
+      <div style={{ fontSize: '13px', color: '#C5949F', lineHeight: '1.5' }}>
+        Redirecting you to payment...
+      </div>
+    </div>
+  </div>
+)}
       
 <OrderModal
   showSummary={showSummary}
